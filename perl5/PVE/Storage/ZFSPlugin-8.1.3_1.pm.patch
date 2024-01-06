@@ -1,5 +1,5 @@
---- ZFSPlugin.pm.orig	2022-02-04 12:08:01.000000000 -0500
-+++ ZFSPlugin.pm	2022-03-26 13:51:40.660068908 -0400
+--- ZFSPlugin.pm.orig	2023-12-31 09:56:18.895228853 -0500
++++ ZFSPlugin.pm	2023-12-31 09:57:08.830488875 -0500
 @@ -10,6 +10,7 @@
  
  use base qw(PVE::Storage::ZFSPoolPlugin);
@@ -58,7 +58,7 @@
  # Configuration
  
  sub type {
-@@ -184,6 +199,24 @@
+@@ -184,6 +199,32 @@
  	    description => "iscsi provider",
  	    type => 'string',
  	},
@@ -69,8 +69,16 @@
 +	    type => 'string',
 +	},
 +	freenas_password => {
-+	    description => "FreeNAS API Password",
++	    description => "FreeNAS API Password (Deprecated)",
 +	    type => 'string',
++	},
++	truenas_secret => {
++	    description => "TrueNAS API Secret",
++	    type => 'string',
++	},
++	truenas_token_auth => {
++	    description => "TrueNAS API Authentication with Token",
++	    type => 'boolean',
 +	},
 +	freenas_use_ssl => {
 +	    description => "FreeNAS API access via SSL",
@@ -83,7 +91,7 @@
  	# this will disable write caching on comstar and istgt.
  	# it is not implemented for iet. iet blockio always operates with
  	# writethrough caching when not in readonly mode
-@@ -211,14 +244,18 @@
+@@ -211,14 +252,20 @@
  	nodes => { optional => 1 },
  	disable => { optional => 1 },
  	portal => { fixed => 1 },
@@ -99,12 +107,14 @@
  	comstar_tg => { optional => 1 },
 +	freenas_user => { optional => 1 },
 +	freenas_password => { optional => 1 },
++	truenas_secret => { optional => 1 },
++	truenas_token_auth => { optional => 1 },
 +	freenas_use_ssl => { optional => 1 },
 +	freenas_apiv4_host => { optional => 1 },
  	lio_tpg => { optional => 1 },
  	content => { optional => 1 },
  	bwlimit => { optional => 1 },
-@@ -243,6 +280,40 @@
+@@ -243,6 +290,40 @@
  
      my $path = "iscsi://$portal/$target/$lun";
  
