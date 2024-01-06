@@ -1,98 +1,227 @@
-# FreeNAS ZFS over iSCSI interface  [![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TCLNEMBUYQUXN&source=url)
+# TrueNAS ZFS over iSCSI Plugin for Proxmox VE
 
-## Currently trying JFrog for the repo. Just changing the Automation and making sure all works.<br/>I am currently testing an should have at least the repos up for production and testing. You will need to update your repos with the new location and gpg. I will have instructions on this page.
+## 📢: ATTENTION 2023-08-16 📢: New repos are now online at [Cloudsmith](#new-installs).
 
-## Also currently developing for TrueNAS-Core 13 to provide fixes to support all the [Free|True]NAS family.
+## Activity
 
-## Thank you for all that have recently donated to the project.
-    Daniel Most
-    Maksym Vasylenko
-    Alexander Finkhäuser - Reoccuring
-    Bjarte Kvamme - Reoccuring
-    Jonathan Schober - Reoccuring
+<details>
+ <summary>Expand to see the activity tree</summary>
+
+ <blockquote>
+  
+ <details>
+  <summary>2023-08-18</summary>
+
+  - Update and cleanup the README.md
+
+  </details>
+
+  <details><summary>2023-08-16</summary>
+   
+  - Fixed repos. https://github.com/TheGrandWazoo/freenas-proxmox/issues/151, https://github.com/TheGrandWazoo/freenas-proxmox/issues/152, https://github.com/TheGrandWazoo/freenas-proxmox/issues/153 See [New Installs](#new-installs).
+  - Fixed PayPal issues. https://github.com/TheGrandWazoo/freenas-proxmox/issues/154
+  - Updated README.md
+
+  </details>
+
+  <details><summary>2023-08-12</summary>
+   
+  - Fixed postinst issue with Windows-based EOL. https://github.com/TheGrandWazoo/freenas-proxmox/issues/149
+
+  </details>
+
+  <details><summary>2023-02-12</summary>
+   
+  - Added `systemctl restart pvescheduler.service` command to the package based on https://github.com/TheGrandWazoo/freenas-proxmox/issues/109#issuecomment-1367527917
+
+  </details>
+
+  </blockquote>
+</details>
+
+## Donations [![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TCLNEMBUYQUXN&source=url)
+
+<details>Donators<summary>Thank you for all that have donated to the project - Updated 2023-08-18</summary>
+ 
+    Alexander Finkhäuser - Recurring
+    Bjarte Kvamme - Recurring
+    Jonathan Schober - Recurring
+    Carlos Galvez from Security Camera
+    Sebastian Fischer
+    Eugene van der Merwe
+    Martin Gonzalez
     
-## And thanks to all that have donated to the project in the past.
+    Jakub Jochec
+    Frederic Silvi
+    Vincent Cui
+    Mark Komarinski
+    Jesse Bryan
+    Maksym Vasylenko
+    Daniel Most
+    Velocity Host
+    Robert Hancock
     Clevvi Technology
-    Mark Elkins - Reoccuring
+    Mark Elkins
     Marc Hodler
     Martin Gonzalez
 
+</details>
 
-I have created a debian repo that holds a package to install scripts into the Proxmox VE system that will automatically do all the necessary patching when one or any combo of the following files are changed in the Proxmox VE stream:
-```
-/usr/share/pve-manager/js/pvemanagerlib.js    <- From package pve-manager
-/usr/share/pve-docs/api-viewer/apidoc.js      <- From package pve-docs
-/usr/share/perl5/PVE/Storage/ZFSPlugin.pm     <- From package libpve-storage-perl
-```
-It will also install the /usr/share/perl5/PVE/Storage/LunCmd/FreeNAS.pm (The FreeNAS API plugin), git and librest-client-perl
+Their donations have allowed for:
+- A 4 Node Proxmox VE Cluster for testing and development.
+  - Spin up old and new revisions of FreeNAS and TrueNAS.
+- 10Gb Ethernet Testing.
+- Multihomed configuration testing.
+  - In progress and as best I can in a flat network.
 
-If you wish, you may remove the directory 'freenas-proxmox' where your system is currently
-housing the repo and then issue the following to have a clean system before installing the
-package.
+## Roadmap
+<details><summary>Roadmap details</summary>
 
-On Proxmox 5
-```bash
-apt install --reinstall pve-manager pve-docs libpve-storage-perl
-```
+* Update the documentation - <i>In Progress</i>.
+  * Restructure the main README.md for better readability. 
+  * Add some screenshots.
+* Fix Max Lun Limit issue.
+  * https://github.com/TheGrandWazoo/freenas-proxmox/issues/150
+* Fix automated builds - <i>In Progress</i>.
+  * Production - 'main' repo component.
+* Autoinstall the SSH keys.
+  * Tech spike to see if it is even doable.
+* Hashicorp Vault integration.
+  * Pull in secrets from a Hashicorp Vault service.  
+  * Tech spike to see if it is even doable.
+* Package the patches with the deb package.
+  * Remove the need for git dependency.
+* Change to LWP::UserAgent
+  * Remove dependency of the REST::Client because LWP::UserAgent is already installed and used by Proxmox VE.
+* Change from FreeNAS to TrueNAS - <i>In Progress</i>.
+  * Cleanup the FreeNAS repo and name everything to TrueNAS to be inline with the product.
+* Add API key for direct TrueNAS services - <i>In Progress</i>.
+  * Will be a new enable field and API key and will only be used by the plugin.
+  * You will still need the SSH keys, username, and password because of Proxmox VE using `iscsiadm` to get the list of disks.
+    * This is tricky because the format needs to be that of the output of 'zfs list' which is not part of the LunCmd but that of the backend Proxmox VE system and the API's do a bunch of JSON stuff.
 
-On Proxmox 6
-```bash
-apt reinstall pve-manager pve-docs libpve-storage-perl
-```
+</details>
 
-On Proxmox 7
-```bash
-apt reinstall pve-manager pve-docs libpve-storage-perl
-```
-## Changing in the near future.
-Issue the following to install the repo and get your Proxmox VE updating the FreeNAS patches automatically:
-```bash
-wget http://repo.ksatechnologies.com/debian/pve/ksatechnologies-release.gpg -O /etc/apt/trusted.gpg.d/ksatechnologies-repo.gpg
-echo "deb http://repo.ksatechnologies.com/debian/pve stable freenas-proxmox" > /etc/apt/sources.list.d/ksatechnologies-repo.list
-```
+## New Install Instructions
 
-### I will be using a 'testing' repo to develop the new phase of the Proxmox VE FreeNAS plugin.
-#### This next phase will introduce the following...
-* Auto detection of the Proxmox VE version
-* Auto detection of the FreeNAS version so it will use the V1 or V2 API's or you can select it manually via the Proxmox VE FreeNAS modal
-* Remove the need for SSH keys and use the API
-  * This is tricky because the format needs to be that of the output of'zfs list' which is not part of the LunCmd but that of the backend Proxmox VE system and the API's do a bunch of JSON stuff.
+### Select at least one `Step 1.x` based on your preference. Can be combined.
 
-#### If you'd like, you may also issue the following commands now or later to use the 'testing' repo.
-#### Just comment the 'stable' line and uncomment the 'testing' line in 
-#### /etc/apt/sources.list.d/ksatechnologies-repo.list to use. 'testing' is disabled be default.
-```bash
-echo "" >> /etc/apt/sources.list.d/ksatechnologies-repo.list
-echo "# deb http://repo.ksatechnologies.com/debian/pve testing freenas-proxmox" >> /etc/apt/sources.list.d/ksatechnologies-repo.list
-```
+<details><summary>Step 1.0: For stable releases. <b>Enabled</b> by default.</summary>
 
-Then issue the following to install the package
-```
-apt update
-apt install freenas-proxmox
-```
+ ### truenas-proxmox repo - Currently follows the 2.0 branch.
 
-Then just do your regular upgrade via apt to your system; the package will automatically
-issue all commands to patch the files.
-```bash
-apt update
-apt [full|dist]-upgrade
-```
+ Select one of the following GPG Key locations based on your preference.
 
-If you wish not to use the package you may remove it at anytime with
-```
-apt [remove|purge] freenas-proxmox
-```
-This will place you back to a normal and unpatched Proxmox VE install.
+ ```bash
+ # Preferred - based on documentation. Copy and paste to bash command line:
+ keyring_location=/usr/share/keyrings/ksatechnologies-truenas-proxmox-keyring.gpg
+ ```
 
-Please be aware that this plugin uses the FreeNAS APIs and NOT the ssh/scp interface like the other plugins use, but...
+ ```bash
+ # Alternative - If you wish to continue with the old ways.  Copy and paste to bash command line:
+ keyring_location=/etc/apt/trusted.gpg.d/ksatechnologies-truenas-proxmox.gpg
+ ```
 
-You will still need to configure the SSH connector for listing the ZFS Pools because this is currently being done in a Proxmox module (ZFSPoolPlugin.pm). To configure this please follow the steps at https://pve.proxmox.com/wiki/Storage:_ZFS_over_iSCSI that have to do with SSH between Proxmox VE and FreeNAS. The code segment should start out `mkdir /etc/pve/priv/zfs`.
+ Copy and paste to bash command line to load the GPG key to the location selected above:
+ ```bash
+ curl -1sLf 'https://dl.cloudsmith.io/public/ksatechnologies/truenas-proxmox/gpg.284C106104A8CE6D.key' |  gpg --dearmor >> ${keyring_location}
+ ```
+
+ Copy and paste the following code to bash command line to create '/etc/apt/sources.list.d/ksatechnologies-repo.list'
+ ```bash
+ cat << EOF > /etc/apt/sources.list.d/ksatechnologies-repo.list
+ # Source: KSATechnologies
+ # Site: https://cloudsmith.io
+ # Repository: KSATechnologies / truenas-proxmox
+ # Description: TrueNAS plugin for Proxmox VE - Production
+ deb [signed-by=${keyring_location}] https://dl.cloudsmith.io/public/ksatechnologies/truenas-proxmox/deb/debian any-version main
+
+ EOF
+ ```
+
+</details>
+
+<details><summary>Step 1.1: For development releases. <i>Disabled</i> by default.</summary>
+
+ ### truenas-proxmox-testing repo - Follows the master branch and you wish to test before a stable release (beta).
+ 
+ Select one of the following GPG Key locations based on your preference.
+
+ ```bash
+ # Preferred - based on documentation. Copy and paste to bash command line:
+ keyring_location=/usr/share/keyrings/ksatechnologies-truenas-proxmox-testing-keyring.gpg
+ ```
+
+ ```bash
+ # Alternative - If you wish to continue with the old ways.  Copy and paste to bash command line:
+ keyring_location=/etc/apt/trusted.gpg.d/ksatechnologies-truenas-proxmox-testing.gpg
+ ```
+
+ Copy and paste to bash command line to load the GPG key to the location selected above:
+ ```bash
+ curl -1sLf 'https://dl.cloudsmith.io/public/ksatechnologies/truenas-proxmox-testing/gpg.CACC9EE03F2DFFCC.key' |  gpg --dearmor >> ${keyring_location}
+ ```
+
+ Copy and paste the following code to bash command line to create '/etc/apt/sources.list.d/ksatechnologies-testing-repo.list'
+ ```bash
+ cat << EOF > /etc/apt/sources.list.d/ksatechnologies-testing-repo.list
+ # Source: KSATechnologies
+ # Site: https://cloudsmith.io
+ # Repository: KSATechnologies / truenas-proxmox-testing
+ # Description: TrueNAS plugin for Proxmox VE - Testing
+ deb [signed-by=${keyring_location}] https://dl.cloudsmith.io/public/ksatechnologies/truenas-proxmox-testing/deb/debian any-version main
+
+ EOF
+ ```
+
+</details>
+
+<details><summary>Step 2.0: Next step after completing any combination of the 1.x steps</summary>
+
+ ### Update apt
+
+ Then issue the following to install the package
+ ```bash
+ apt update
+ apt install freenas-proxmox
+ ```
+
+ </details>
+
+ <details><summary>Step 3.0: Maintenance.</summary>
+
+  Then just do your regular upgrade via apt at the command line or the Proxmox Update subsystem; the package will automatically issue all commands to patch the files.
+  ```bash
+  apt update
+  apt [full|dist]-upgrade
+  ```
+
+ </details>
+
+</details>
+
+## Uninstall truenas-proxmox
+
+<details><summary>If you wish not to use the package you may remove it at anytime with the following:</summary>
+
+ ```
+  apt [remove|purge] freenas-proxmox
+ ```
+
+ This will place you back to a normal and non-patched Proxmox VE install.
+ 
+</details>
+
+## Notes:
+
+### Please be aware that this plugin uses the TrueNAS APIs but still uses SSH keys due to the underlying Proxmox VE perl modules that use the ```iscsiadm``` command.
+
+You will still need to configure the SSH connector for listing the ZFS Pools because this is currently being done in a Proxmox module (ZFSPoolPlugin.pm). To configure this please follow the steps at https://pve.proxmox.com/wiki/Storage:_ZFS_over_iSCSI that have to do with SSH between Proxmox VE and TrueNAS. The code segment should start out `mkdir /etc/pve/priv/zfs`.
 
 1. Remember to follow the instructions mentioned above for the SSH keys.
 
-1. Refresh the Proxmox GUI in your browser to load the new Javascript code.
+2. Refresh the Proxmox GUI in your browser to load the new Javascript code.
 
-1. Add your new FreeNAS ZFS-over-iSCSI storage using the FreeNAS-API.
+3. Add your new TrueNAS ZFS-over-iSCSI storage using the TrueNAS-API.
 
-1. Thanks for your support.
+4. Thanks for your support.

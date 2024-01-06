@@ -128,10 +128,13 @@ sub run_lun_command {
 
     syslog("info",(caller(0))[3] . " : $method(@params)");
 
-    if(!defined($scfg->{'freenas_user'}) || !defined($scfg->{'freenas_password'})) {
-        die "Undefined freenas_user and/or freenas_password.";
+    if (defined($scfg->{'truenas_token_auth'}) && $scfg->{'truenas_token_auth'}) {
+        if (!defined($scfg->{'truenas_secret'})) {
+            die "Undefined `truenas_secret` variable.";
+        }
+    } elsif (!defined($scfg->{'freenas_user'}) || !defined($scfg->{'freenas_password'})) {
+        die "Undefined `freenas_user` and/or `freenas_password` variables.";
     }
-
     if (!defined $freenas_server_list->{defined($scfg->{freenas_apiv4_host}) ? $scfg->{freenas_apiv4_host} : $scfg->{portal}}) {
         freenas_api_check($scfg);
     }
@@ -341,7 +344,13 @@ sub freenas_api_connect {
     }
     $freenas_server_list->{$apihost}->setHost($scheme . '://' . $apihost);
     $freenas_server_list->{$apihost}->addHeader('Content-Type', 'application/json');
-    $freenas_server_list->{$apihost}->addHeader('Authorization', 'Basic ' . encode_base64($scfg->{freenas_user} . ':' . $scfg->{freenas_password}));
+    if (defined($scfg->{'truenas_token_auth'})) {
+        syslog("info", (caller(0))[3] . " : Authentication using Bearer Token Auth");
+        $freenas_server_list->{$apihost}->addHeader('Authorization', 'Bearer ' . $scfg->{truenas_secret});
+    } else {
+        syslog("info", (caller(0))[3] . " : Authentication using Basic Auth");
+        $freenas_server_list->{$apihost}->addHeader('Authorization', 'Basic ' . encode_base64($scfg->{freenas_user} . ':' . $scfg->{freenas_password}));
+    }
     # If using SSL, don't verify SSL certs
     if ($scfg->{freenas_use_ssl}) {
         $freenas_server_list->{$apihost}->getUseragent()->ssl_opts(verify_hostname => 0);
@@ -354,16 +363,16 @@ sub freenas_api_connect {
     syslog("info", (caller(0))[3] . " : REST connection header Content-Type:'" . $type . "'");
 
     # Make sure we are not recursion calling.
-    if ($runawayprevent > 1) {
+    if ($runawayprevent > 2) {
         freenas_api_log_error($freenas_server_list->{$apihost});
         die "Loop recursion prevention";
     # Successful connection
     } elsif ($code == 200 && ($type =~ /^text\/plain/ || $type =~ /^application\/json/)) {
         syslog("info", (caller(0))[3] . " : REST connection successful to '" . $apihost . "' using the '" . $scheme . "' protocol");
         $runawayprevent = 0;
-    # A 302 or 200 with Content-Type not 'text/plain' from {True|Free}NAS means it doesn't like v1.0 APIs.
+    # A 302 or 200 (We already check for the correct 'type' above with a 200 so why add additional conditionals).
     # So change to v2.0 APIs.
-    } elsif ($code == 302 || ($code == 200 && $type !~ /^text\/plain/)) {
+    } elsif ($code == 302 || $code == 200) {
         syslog("info", (caller(0))[3] . " : Changing to v2.0 API's");
         $runawayprevent++;
         $apiping =~ s/v1\.0/v2\.0/;
@@ -533,11 +542,15 @@ sub freenas_iscsi_create_extent {
 
     my $name = $lun_path;
     $name  =~ s/^.*\///; # all from last /
+
     my $pool = $scfg->{'pool'};
+    # If TrueNAS-SCALE the slashes (/) need to be converted to dashes (-)
     if ($product_name eq "TrueNAS-SCALE") {
         $pool =~ s/\//-/g;
+        syslog("info", (caller(0))[3] . " : TrueNAS-SCALE slash to dash conversion '" . $pool ."'");
     }
     $name  = $pool . ($product_name eq "TrueNAS-SCALE" ? '-' : '/') . $name;
+    syslog("info", (caller(0))[3] . " : " . $product_name . " extent '". $name . "'");
 
     my $device = $lun_path;
     $device =~ s/^\/dev\///; # strip /dev/
