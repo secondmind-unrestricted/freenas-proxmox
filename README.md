@@ -1,6 +1,6 @@
 # TrueNAS ZFS over iSCSI Plugin for Proxmox VE
 
-## 📢: ATTENTION 2023-08-16 📢: New repos are now online at [Cloudsmith](#new-installs).
+## 📢: ATTENTION 2024-01-07 📢: Bearer Token Authentication now available in Version 2.3.0 on the testing repo.
 
 ## Activity
 
@@ -8,6 +8,15 @@
  <summary>Expand to see the activity tree</summary>
 
  <blockquote>
+
+ <details>
+  <summary>2024-01-07</summary>
+
+  - Added Bearer Token Authentication.
+  - Changed variable `freenas_password` to `truenas_secret` to represent either a password or token.
+  - Identation and whitespace cleanup.
+
+  </details>
   
  <details>
   <summary>2023-08-18</summary>
